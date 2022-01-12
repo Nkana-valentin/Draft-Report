@@ -1,0 +1,39 @@
+\documentclass[10pt,a4paper,twoside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage[margin=2.54cm]{geometry}
+\usepackage{amsfonts}
+\usepackage{hyperref} % for link citations
+\usepackage{amssymb}
+\usepackage{makeidx}
+\usepackage{graphicx}
+\author{Valentin Nkana}
+\title{Draft report}
+\begin{document}
+	
+\maketitle
+%\tableofcontents
+	
+	
+\section{Arbitrary Lagrangian-Eulerian (ALE) formulation.}
+The ALE method has become the standard implementation in most popular codes to
+solve for the flow around moving boundaries while the mesh deforms accordingly. Generally, the governing equations to solve the flow are discretised using Eulerian description, where the fluid is allowed to flow through the fixed mesh. This is in  contrast to the Lagrangian formulation, where the mesh is fixed to the fluid or material. When the material or fluid deforms, the mesh deforms with it. This approach is frequently utilized to discretise the governing equations encountered in structural mechanics. Notwithstanding, whenever the flow domain moves or deforms in time due to a moving boundary, a stationary mesh becomes inconvenient, because it requires the explicit tracking of the domain boundary. Therefore, the ALE formulation is used to discretise the flow equations on moving and deforming meshes $\cite{bogaers2010reduced}$. This method solves the equations on a third
+coordinate system, which is not required to match either the spatial frame (Eulerian) or the material frame (Lagrangian) coordinate systems by incorporating and combining both Lagrangian and Eulerian frameworks. With the Lagrangian contribution, the mesh can move and deform according to the boundary motion, whereas the Eulerian part takes care of the fluid flow through the tessellation.
+
+\subsection{NSEs fluid flow in ALE settings.}
+
+
+
+
+
+
+
+%\begin{thebibliography}{100}
+%	\bibitem[label1]{cite_key1} bibliographic information
+%	\bibitem[label2]{cite_key2} bibliographic information
+%	...
+%\end{thebibliography}	
+\bibliographystyle{plain}
+\bibliography{mybib}
+\end{document}
