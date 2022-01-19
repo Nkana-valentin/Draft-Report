@@ -14,16 +14,91 @@
 	
 \maketitle
 %\tableofcontents
-	
+\section{State of the art}
+The usage of reduced order models for fluid structure interaction has been studied and widely and the state of the art counts already several scientific contribution [\cite{bogaers2010reduced}, \cite{shinde2019galerkin}]	
 	
 \section{Arbitrary Lagrangian-Eulerian (ALE) formulation.}
 The ALE method has become the standard implementation in most popular codes to
 solve for the flow around moving boundaries while the mesh deforms accordingly. Generally, the governing equations to solve the flow are discretised using Eulerian description, where the fluid is allowed to flow through the fixed mesh. This is in  contrast to the Lagrangian formulation, where the mesh is fixed to the fluid or material. When the material or fluid deforms, the mesh deforms with it. This approach is frequently utilized to discretise the governing equations encountered in structural mechanics. Notwithstanding, whenever the flow domain moves or deforms in time due to a moving boundary, a stationary mesh becomes inconvenient, because it requires the explicit tracking of the domain boundary. Therefore, the ALE formulation is used to discretise the flow equations on moving and deforming meshes $\cite{bogaers2010reduced}$. This method solves the equations on a third
-coordinate system, which is not required to match either the spatial frame (Eulerian) or the material frame (Lagrangian) coordinate systems by incorporating and combining both Lagrangian and Eulerian frameworks. With the Lagrangian contribution, the mesh can move and deform according to the boundary motion, whereas the Eulerian part takes care of the fluid flow through the tessellation.
+coordinate system, which is not required to match either the spatial frame (Eulerian) or the material frame (Lagrangian)
+ coordinate systems by incorporating and combining both Lagrangian and Eulerian frameworks. With the Lagrangian contribution, the mesh can move and deform according to the boundary motion, whereas the Eulerian part takes care of the fluid flow through the tessellation.
 
-\subsection{NSEs fluid flow in ALE settings.}
+\subsection{NSEs fluid flows in ALE settings.}
 
 
+
+In general, the momentum equation in standard NSE given  a scalar $\phi $ can be derived on a dynamic mesh as
+
+\begin{equation}\label{momentum}
+\frac{\partial}{\partial t}\int_{\Omega_{CV}}^{}\rho \phi d\Omega + \oint_{S_{CV}} \rho \textbf{n}.(\textbf{u}-\textbf{u}_m)\phi dS - \oint_{S_{CV}} \rho \Gamma_{\phi} \textbf{n}.\nabla \phi dS = \int_{\Omega_{CV}} S_{\phi} (\phi) d\Omega
+\end{equation}
+
+where $\Omega_{CV}$ is a given arbitrary volume and $\textbf{u}_m$ the moving surface velocity. The relationship between the rate of change of the volume $\Omega_{CV}$ and the mesh velocity $\textbf{u}_m$  of the boundary surface S is defined by the so-called Space Conversation Law (SCL) also known as Geometric Conversation Law.
+
+\begin{equation}
+\frac{\partial}{\partial t}\int_{\Omega_{CV}}^{} d\Omega - \oint_{S_{CV}} \textbf{n}.\textbf{u}_m dS  = 0
+\end{equation}
+
+If equation $\ref{momentum}$ is discretised in space and time following relation is obtained for a constant time-step:
+\begin{eqnarray}
+\frac{3\rho_P^{n+1}\phi_P^{n+1}V_P^{n+1} - 4\rho_P^{n}\phi_P^{n}V_P^{n} + \rho_P^{n-1}\phi_P^{n-1}V_P^{n-1}}{2\Delta t} + \\
+\displaystyle\sum_{f}(\dot{m}_f^{n+1}  - \rho_f^{n+1}\dot{V}_f^{n+1})\phi_f^{n+1}  & = &\\
+ \displaystyle\sum_{f} (\rho\Gamma_{\phi})_f^{n+1}S_f^{n+1}\textbf{n}_f^{n+1} \cdot(\nabla \phi)_f^{n+1} + s_{\phi}^{n+1}V_P^{n+1}
+\end{eqnarray}
+where the subscript P denotes the cell values and f represents the values aat the face centres. The subscripts n+1, n and n-1 are respectively, the new, old and old-old values. The mass flux through the face is given by 
+\begin{equation}\label{mf}
+\dot{m}_f = \boldsymbol{n}_f\cdot \boldsymbol{u}_fS_f.
+\end{equation}
+and the cell face volume change by 
+\begin{equation}
+\dot{V}_f = \boldsymbol{n}_f\cdot \boldsymbol{u}_{{m}_f}S_f.
+\end{equation}
+For non constant time step, we have
+\begin{eqnarray*}
+\left(1 + \frac{\Delta t^{n+1}}{\Delta t^{n+1}+ \Delta t^{n}}\right)\rho_P^{n+1}\phi_P^{n+1}V_P^{n+1} + \left(1 + \frac{\Delta t^{n+1}}{\Delta t^{n}}\right)\rho_P^{n}\phi_P^{n}V_P^{n} + \\ 
+\left(1 + \frac{(\Delta t^{n+1})^2}{\Delta t^n(\Delta t^{n+1}+ \Delta t^{n})}\right) \rho_P^{n-1}\phi_P^{n-1}V_P^{n-1} + \\ 
+\displaystyle\sum_{f}(\dot{m}_f^{n+1}  - \rho_f^{n+1}\dot{V}_f^{n+1})\phi_f^{n+1}  & = &\\
+\displaystyle\sum_{f} (\rho\Gamma_{\phi})_f^{n+1}S_f^{n+1}\textbf{n}_f^{n+1} \cdot(\nabla \phi)_f^{n+1} + s_{\phi}^{n+1}V_P^{n+1}
+\end{eqnarray*}
+with $\boldsymbol{u}_m$ represents the cell face velocity. The fluid mass flux $\dot{m}$ is obtained as part of the solution, satisfying mass conservation. It is necessary to determine the volume face flux such that is satisfies the Space Conservation Law. Inconsistency could be introduce if the temporal discretisation scheme (SCL) is different to the one used in the momentum equation. It is important to determine the volume face flux in a consistent way such that it equals the swept volume calculation (\textbf{see section on the swept volume}).
+\subsection{Boundary conditions}
+In the simulations,we will deal with three types of boundary conditions namely: inflow ($\Gamma_{in}$), outflow ($\Gamma_{out}$), and solid wall ($\Gamma_{sw}$). There are specified as 
+\begin{eqnarray}
+	\boldsymbol{u} = \boldsymbol{d}(\boldsymbol{x}), & (\nabla p).\boldsymbol{n} = \boldsymbol{0}, & \text{on}~~ \Gamma_{in}, 
+\end{eqnarray}
+\begin{eqnarray}
+(\nabla \boldsymbol{u})[\boldsymbol{n}] = \boldsymbol{0},  &  p = 0, & \text{on}~~ \Gamma_{out}, 
+\end{eqnarray}
+\begin{eqnarray}
+\boldsymbol{u} = \boldsymbol{u}_m , & (\nabla p).\boldsymbol{n} = \boldsymbol{0}, & \text{on}~~ \Gamma_{sw}, 
+\end{eqnarray}
+\subsection{Solid equations in Lagrangian frame}
+The Lagrangian frame of reference specifies that the material velocity is equal to the frame velocity i.e 
+\begin{eqnarray}
+\boldsymbol{u} = \boldsymbol{u}_m 
+\end{eqnarray}
+The balance of mass thus reduces to $\rho  = \rho_0(\boldsymbol{X})$, which is independent of time. The momentum equation becomes
+\begin{equation}
+\rho \frac{\partial^2 \boldsymbol{d}}{\partial t^2} = \nabla_{\boldsymbol{X}}\cdot \boldsymbol{P}+ \rho \boldsymbol{b}
+\end{equation}
+with $\boldsymbol{d}$ the material displacements given by
+\begin{equation}
+\rho \frac{\partial \boldsymbol{d}}{\partial t} =  \boldsymbol{u}
+\end{equation}
+\subsection{Swept volume calculation}
+
+\section{Unstructured mesh movement}
+Fluid structure-interaction simulations involve boundary deformations. These deformations can be prescribed or due to structural deflection due to the flow. It is necessary for the computational grid (mesh) to conform to the new moving domain when using a Lagrangian family of descriptions \cite{bogaers2010reduced}. It is often inadvisable to locally adapt a mesh at each instance of mesh motion and this process can be expensive, but mesh topology is altered requiring that information be mapped from the old mesh to the new one. The projection of these information between these two mesh states is another expensive process and can lead to conservation issues arising within the fluid domain. To circumvent these issues, several mesh movement algorithms have been developed with the primary aim to move a mesh such that the total frequency and necessity for re-meshing or localized adaptation is reduced. As we will might used complex geometries, we will preferred to deal with unstructured meshes. However, several efficient algorithms exist for moving a structured mesh (e.g transfinite interpolation). Three approaches can be used when dealing with unstructured meshes: radial basis function, mesh quality optimization and with the solution of the set of partial differential equations (PDEs) like Laplace equation with variable diffusivity and Solid body rotation stress equation (SBRS). Each of the mentioned methodologies differ in terms of quality (based on skewness and non-orthogonality), efficiency (computational cost) and robustness. The main difficulty is to maintain high mesh quality when the wing exhibits large translations and rotations.
+\begin{enumerate}
+	\item Radial basis function
+	
+	RBF interpolation is a well established algorithm for interpolating scattered data and has for some time been used in fluid structure interaction computations to transfer information across discrete fluid structure interfaces. The dynamic mesh using RBF interpolation has become popular in recent decade for its ability to move meshes in a computationally inexpensive manner. The RBF method, can be used with different basis functions with global or compact support. A pros of the globally supported basis function is its capability to produce highest average mesh quality, but it's computationally expensive compared to a function with compact support. The implementation is twofold: the absolute and the relative implementation. In order
+	to increase the efficiency of this method,
+	boundary coarsening and smoothing of the radial basis function were introduced. 
+\end{enumerate}
+\section{Reduced order modelling using POD}
+Various popular methods of weighted residuals are provided in the context of POD applications.
+The collocation method,Least squares method and Galerkin projection.
 
 
 
