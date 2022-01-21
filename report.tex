@@ -15,17 +15,19 @@
 \maketitle
 %\tableofcontents
 \section{State of the art}
-The usage of reduced order models for fluid structure interaction has been studied and widely and the state of the art counts already several scientific contribution [\cite{bogaers2010reduced}, \cite{shinde2019galerkin}]	
+%We would like to propose a  data-driven technique that combines a deep learning framework with a dimensionality reduction based on proper orthogonal decomposition (POD) that will reduce mesh motion problems.  This technique will be applied to dynamic fluid-structure interaction problems in the laminar regime with the ALE formulation in the context of finite volume.
+
+The usage of reduced order models for fluid structure interaction has been studied and widely and the state of the art counts already several scientific contribution [\cite{bogaers2010reduced}, \cite{shinde2019galerkin}, \cite{shinde2016modelling}, \cite{ballarin2016pod}, \cite{liberge2010reduced}, \cite{liberge2008reduction},\cite{tello2020fluid} ]	
 	
-\section{Arbitrary Lagrangian-Eulerian (ALE) formulation.}
+\section{Background theory.}
+\subsection{ALE formulation}
+ALE method is categorized as a conforming mesh type \cite{morab2020overview}. In the literature, we have other method such as Immersed Boundary method (IBM) and Immersed Interface method (IIM) also known as fictitious method.
 The ALE method has become the standard implementation in most popular codes to
 solve for the flow around moving boundaries while the mesh deforms accordingly. Generally, the governing equations to solve the flow are discretised using Eulerian description, where the fluid is allowed to flow through the fixed mesh. This is in  contrast to the Lagrangian formulation, where the mesh is fixed to the fluid or material. When the material or fluid deforms, the mesh deforms with it. This approach is frequently utilized to discretise the governing equations encountered in structural mechanics. Notwithstanding, whenever the flow domain moves or deforms in time due to a moving boundary, a stationary mesh becomes inconvenient, because it requires the explicit tracking of the domain boundary. Therefore, the ALE formulation is used to discretise the flow equations on moving and deforming meshes $\cite{bogaers2010reduced}$. This method solves the equations on a third
 coordinate system, which is not required to match either the spatial frame (Eulerian) or the material frame (Lagrangian)
  coordinate systems by incorporating and combining both Lagrangian and Eulerian frameworks. With the Lagrangian contribution, the mesh can move and deform according to the boundary motion, whereas the Eulerian part takes care of the fluid flow through the tessellation.
 
 \subsection{NSEs fluid flows in ALE settings.}
-
-
 
 In general, the momentum equation in standard NSE given  a scalar $\phi $ can be derived on a dynamic mesh as
 
@@ -75,27 +77,129 @@ In the simulations,we will deal with three types of boundary conditions namely: 
 \subsection{Solid equations in Lagrangian frame}
 The Lagrangian frame of reference specifies that the material velocity is equal to the frame velocity i.e 
 \begin{eqnarray}
-\boldsymbol{u} = \boldsymbol{u}_m 
+\boldsymbol{u} = \boldsymbol{u}_m.
 \end{eqnarray}
 The balance of mass thus reduces to $\rho  = \rho_0(\boldsymbol{X})$, which is independent of time. The momentum equation becomes
-\begin{equation}
-\rho \frac{\partial^2 \boldsymbol{d}}{\partial t^2} = \nabla_{\boldsymbol{X}}\cdot \boldsymbol{P}+ \rho \boldsymbol{b}
+\begin{equation}\label{lagran-mom}
+\rho \frac{\partial^2 \boldsymbol{d}}{\partial t^2} = \nabla_{\boldsymbol{X}}\cdot \boldsymbol{P}+ \rho \boldsymbol{b}.
 \end{equation}
+
 with $\boldsymbol{d}$ the material displacements given by
 \begin{equation}
-\rho \frac{\partial \boldsymbol{d}}{\partial t} =  \boldsymbol{u}
+\rho \frac{\partial \boldsymbol{d}}{\partial t} =  \boldsymbol{u}.
 \end{equation}
-\subsection{Swept volume calculation}
+and $\boldsymbol{P}$ can be the first Piola-Kirchhoff or the second Piola-Kirchhoff stress. The divergence here is under the material coordinates.
+Boundary conditions for \ref{lagran-mom} on the Dirichlet ($\Gamma_D$) and Neumann ($\Gamma_N$)  as specified as 
+\begin{eqnarray}
+\boldsymbol{d} = \boldsymbol{0} & \text{on}~~ \Gamma_{D}, 
+\end{eqnarray}
+\begin{eqnarray}\label{traction}
+\boldsymbol{P}[\boldsymbol{n}] = \boldsymbol{t}(\boldsymbol{X}) & \text{on}~~ \Gamma_{N}.
+\end{eqnarray}
+A direct consequence of \ref{lagran-mom} is that no deformation (rigid body) of the solid domain occurs with the given relation:
+\begin{equation}
+\nabla_{\boldsymbol{X}}\cdot \boldsymbol{P} = 0.
+\end{equation}
 
+We will assume in this work that the Neumann partition of the boundary is coincident with the fluid structure boundary denoted $\Gamma_{F/S}$.
+\subsection{Fluid structure coupling}
+The fluid-structure is coupled by imposing fluid stresses on the solid (i.e., the traction given in \ref{traction}) and communicate the solid displacements and velocities to the fluid. The requirements for compatibility and the no-slip condition require the following relation:
+\begin{eqnarray}
+\boldsymbol{u}  = \boldsymbol{u}_m = \frac{\partial \boldsymbol{d}}{\partial t}, & \boldsymbol{\sigma}_s \cdot \boldsymbol{n} = \boldsymbol{\sigma}_F \cdot \boldsymbol{n}, & \text{on} ~~  \Gamma_{F/S}.
+\end{eqnarray}
+
+
+\subsection{Swept volume calculation}
+The swept calculation is necessary in order to satisfy the Space Conservation Law described above. It is defined as the volume swept by a face of a polyhedral cell between the time steps $t^n$ and $t^{n+1}$. This concept was successfully validated on test cases using unsteady flow with mesh motion and proved to be sufficiently accurate. 
+%Therefore, this method is implemented in OpenFOAM.
+\section{Reynolds and Strouhal numbers}
+Dimensionless numbers are important. They are used in order to improve our understanding of biological flows (like flows around solid domain).
+In the following, $T_{conv}$, $T_{visc}$, and $T_{motion}$ are the time-scale of the convective transport, viscous transport and body motion respectively.
+\section{Strouhal number}
+The Strouhal number is used in engineering applications to characterize the vortex shedding. It was firstly use in the context of the natural vortex shedding behind a stationary cylinder in a uniform flow. The universal relation between Reynolds and Strouhal number is based on the observed vortex-shedding frequency in the laminar flow regime. This relation was found by Williamsom in \cite{williamson1988defining}. For moving bodies, the Strouhal number can be very useful. For example, in flapping flight, the Strouhal number is proportional to the maximum value of the induced angle of attack, given that the wing flaps is a stroke plane perpendicular to the forward velocity \cite{bos2010numerical}. 
+\begin{equation}
+St = \frac{fL}{U} = \frac{T_{conv}}{T_{motion}}
+\end{equation}
+\section{Reynolds number}
+\begin{equation}
+St = \frac{UL}{\nu} = \frac{T_{visc}}{T_{conv}}
+\end{equation}
 \section{Unstructured mesh movement}
+Moving the entire mesh for DFSI (Dynamic Fluid Structure Interaction) problem is a meaningful in terms of run time. So it is necessary to move the mesh in the region close to the structure to keep the quality and integrity of the mesh preserved. Therefore, far from the structure the mesh movement is negligible. Four regions are defined: the boundary region, the flexible region(subject to displacement) and the fixed region.
 Fluid structure-interaction simulations involve boundary deformations. These deformations can be prescribed or due to structural deflection due to the flow. It is necessary for the computational grid (mesh) to conform to the new moving domain when using a Lagrangian family of descriptions \cite{bogaers2010reduced}. It is often inadvisable to locally adapt a mesh at each instance of mesh motion and this process can be expensive, but mesh topology is altered requiring that information be mapped from the old mesh to the new one. The projection of these information between these two mesh states is another expensive process and can lead to conservation issues arising within the fluid domain. To circumvent these issues, several mesh movement algorithms have been developed with the primary aim to move a mesh such that the total frequency and necessity for re-meshing or localized adaptation is reduced. As we will might used complex geometries, we will preferred to deal with unstructured meshes. However, several efficient algorithms exist for moving a structured mesh (e.g transfinite interpolation). Three approaches can be used when dealing with unstructured meshes: radial basis function, mesh quality optimization and with the solution of the set of partial differential equations (PDEs) like Laplace equation with variable diffusivity and Solid body rotation stress equation (SBRS). Each of the mentioned methodologies differ in terms of quality (based on skewness and non-orthogonality), efficiency (computational cost) and robustness. The main difficulty is to maintain high mesh quality when the wing exhibits large translations and rotations.
-\begin{enumerate}
-	\item Radial basis function
+
+\subsection{Radial basis function}
 	
 	RBF interpolation is a well established algorithm for interpolating scattered data and has for some time been used in fluid structure interaction computations to transfer information across discrete fluid structure interfaces. The dynamic mesh using RBF interpolation has become popular in recent decade for its ability to move meshes in a computationally inexpensive manner. The RBF method, can be used with different basis functions with global or compact support. A pros of the globally supported basis function is its capability to produce highest average mesh quality, but it's computationally expensive compared to a function with compact support. The implementation is twofold: the absolute and the relative implementation. In order
 	to increase the efficiency of this method,
 	boundary coarsening and smoothing of the radial basis function were introduced. 
-\end{enumerate}
+	Using RBF, the interpolation function, s, describing the displacement in the entire computational domain can be approximated by a sum of basis functions \cite{selim2017finite},
+	\begin{equation}
+	s(\boldsymbol{x}) = \displaystyle\sum_{j=1}^{N_b}\gamma_j\phi(||\boldsymbol{x}- \boldsymbol{x}_{b_j}||) + q(\boldsymbol{x}),
+	\end{equation}
+	with $\boldsymbol{x}_{b_j} = [x_{b_j}, y_{b_j}, z_{b_j}]$ be the known boundary value displacements also known as boundary nodes deformations and called the centers for RBF. q is a polynomial, $N_b$ is the number of boundary points and $\phi$ is a given basis function with respect to the Euclidean distance $|| \boldsymbol{x}||.$ In the literature, it is reported that the minimum degree of polynomial q depends on the choice of the basis function $\phi$. The coefficients $\gamma_j$ and the polynomial $q$ are given by the interpolation conditions
+	\begin{equation}
+	s(\boldsymbol{x}_{b_j}) = \boldsymbol{d}_{b_j}.
+	\end{equation}
+	$\boldsymbol{d}_{b_j}$ contains the known discrete values of the boundary point displacements. With the additional requirements:
+	\begin{equation}
+	\displaystyle\sum_{j=1}^{N_b}\gamma_j = \displaystyle\sum_{j=1}^{N_b}\gamma_jx_j = \displaystyle\sum_{j=1}^{N_b}\gamma_jy_j = \displaystyle\sum_{j=1}^{N_b}\gamma_jz_j = 0.
+	\end{equation}
+	We can remark that $q(\boldsymbol{x}) = s(\boldsymbol{x})$ whenever $\boldsymbol{x} = \boldsymbol{x}_{b_j}$. 
+	To obtain the values of the coefficients $\gamma_j$ and the linear polynomial we solve the following system:
+	\begin{equation}\label{rbfsys}
+	\left[\begin{array}{c}
+\boldsymbol{d} \\
+0
+	
+	\end{array}
+	 \right] = \left[ \begin{array}{cc}
+	\Phi_{b,b} & Q_b \\
+	Q_b^T & 0 
+	 \end{array}
+	  \right]	\left[\begin{array}{c}
+	  \boldsymbol{\gamma} \\
+	  \boldsymbol{\beta}
+	  
+	  \end{array}
+	  \right],
+	\end{equation}
+	here, $ \boldsymbol{\gamma}$ contains all coefficients $\gamma_j$ and $ \boldsymbol{\beta}$ the four coefficients of the linear polynomial q. $\Phi_{b,b}$ is an $n_b\times n_b$ matrix containing the evaluation of the basis function $\Phi_{b_i,b_j} = \phi(||\boldsymbol{x}_{b_i} - \boldsymbol{x}_{b_j} ||)$ and can be seen as a connectivity matrix connecting all boundary points with all internal fluid points. $Q_b \in \mathbb{R}^{n_b \times (d+1)}$ matrix with row j given $[1~~~~ \boldsymbol{x}_{b_j}].$  The system \ref{rbfsys} is solved directly by using the LU decomposition because it is a dense matrix system. To solve the system in a more cheap way refer to \cite{bos2010numerical}. After the coefficients in $\boldsymbol{\beta}$ and $\boldsymbol{\gamma}$ are obtained they are used ot calculate the values for the displacements of all internal fluid points $\boldsymbol{d}_{in_j}$ by the following relation:
+	\begin{equation}
+	\boldsymbol{d}_{in_j} = s (\boldsymbol{x}_{in_j}).
+	\end{equation}
+	The above result is transferred to the mesh motion solver to update all internal points accordingly. This interpolation function is equal to the displacement of the moving boundary or zero at the outer boundaries. Every internal mesh point is moved based on its calculated displacement, such that no mesh connectivity is necessary. The size of the method \ref{rbfsys} is $((n_b +d +1) \times (n_b+d+1))$, which is considerably smaller than other techniques using the mesh connectivity. The mesh connectivity techniques encounter systems of the order $(N_{in}\times N_{in})$ with $N_{in}$ the total number of mesh points, which is a dimension higher than the total number of boundary points.
+\subsection{Laplacian and Solid body rotation stress}
+We can see the deforming computational domain as a solid body undergoing internal stresses given by Piola-Kirchhoff stress-strain equation. Unfortunately, this equation is non-linear and expensive to solve using existing numerical techniques. Other type of equations were used namely the
+Laplace equation and the solid body rotation stress (SBR Stress) equation, which is a variant of the linear stress equation \cite{bos2010numerical}.
+In this approach, we solve the mesh motion through a set of PDEs which describes the position and the motion of internal grid points. A mesh motion method based on one of these approaches is computationally cheap since the resulting matrix is sparse which can be solved efficiently by existing iterative solvers (pre-conditioned Conjugate Gradient (PCG) method). In the mesh motion driven by the Laplacian equation, the prescribed/ given boundary point motion might be arbitrary and non-uniform. The nature of the Laplace is that the point displacements will be largest close to the moving boundary and small at large distance. The method needs the specification of a variable diffusivity. The following relation defines the Laplace equation:
+\begin{equation}
+\nabla \cdot (\gamma \nabla \boldsymbol{x}) = \boldsymbol{0},
+\end{equation}
+with $\boldsymbol{x}$ the displacement field and $\gamma$ the diffusion coefficient, which decreases with the radius \textit{r} from the deforming boundary as follows:
+\begin{equation}
+\gamma (\textit{r}) = \frac{1}{\textit{r}^m}.
+\end{equation}
+The resulting mesh quality strongly depends on the chosen $\gamma (\textit{r}).$
+In the case of Solid body rotation stress equation, the deformation of the mesh relied on the linear elasticity equation and it is valid for small displacements. The linear elasticity equation is given:
+\begin{equation}
+\nabla \cdot \boldsymbol{\sigma} = \boldsymbol{f},
+\end{equation}
+with $\boldsymbol{\sigma}$ the stress tensor and $\boldsymbol{f}$ the exerted load vector. The stress tensor $\boldsymbol{\sigma}$ is defined and depend of the strain given:
+\begin{equation}
+\nabla \cdot \boldsymbol{\sigma} = \lambda tr(\boldsymbol{E}) + 2\mu \boldsymbol{E},
+\end{equation}
+where tr is the trace and $\lambda$ and $\mu$ are Lam\'{e} constants, which are a property of the elastic material. They can be related to Young's modulus, E, as
+\begin{eqnarray}
+\lambda = \frac{\nu E}{(1+\nu)(1-2\nu)},  &  \mu = \frac{ E}{2(1+\nu)}
+\end{eqnarray}
+where $\nu$ is the Poisson's ratio.
+With $\lambda = -E$ and $\mu = E$ the solid body rotation stress equation is given by the following relation:
+\begin{equation}\label{sbrs}
+\nabla \cdot (\gamma \nabla \boldsymbol{x}) + \nabla (\gamma (\nabla \boldsymbol{x}-\nabla \boldsymbol{x}^T))-\lambda tr(\nabla \boldsymbol{x}) = 0.
+\end{equation}
+Equation \ref{sbrs} allows for rigid body motion and is still linear and therefore the computational costs are of the same order as the costs necessary to solve the Laplace equation. However, in order to deal with large rotations or displacements, we will use RBF.
+
 \section{Reduced order modelling using POD}
 Various popular methods of weighted residuals are provided in the context of POD applications.
 The collocation method,Least squares method and Galerkin projection.
